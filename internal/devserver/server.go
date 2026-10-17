@@ -30,6 +30,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -89,12 +90,15 @@ type StartOptions struct {
 	SearchAttributes      map[string]enums.IndexedValueType
 	LogConfig             func([]byte)
 	GRPCInterceptors      []grpc.UnaryServerInterceptor
+	AuthToken             string
+	AuthProxyListen       string
 }
 
 type Server struct {
-	server   temporal.Server
-	ui       *uiserver.Server
-	logLevel *slog.LevelVar
+	server    temporal.Server
+	ui        *uiserver.Server
+	authProxy *authProxy
+	logLevel  *slog.LevelVar
 }
 
 func Start(options StartOptions) (*Server, error) {
@@ -151,10 +155,30 @@ func Start(options StartOptions) (*Server, error) {
 		}
 		return nil, err
 	}
-	return &Server{server: server, ui: ui, logLevel: logLevel}, nil
+	// Optional in-process auth proxy: external clients connect to this listener
+	// with a bearer token; internal services keep talking to the frontend.
+	var proxy *authProxy
+	if options.AuthToken != "" {
+		if options.AuthProxyListen == "" {
+			options.AuthProxyListen = "127.0.0.1:7234"
+		}
+		upstream := net.JoinHostPort(options.FrontendIP, strconv.Itoa(options.FrontendPort))
+		proxy, err = startAuthProxy(options.AuthProxyListen, upstream, options.AuthToken, options.Logger)
+		if err != nil {
+			server.Stop()
+			if ui != nil {
+				ui.Stop()
+			}
+			return nil, fmt.Errorf("failed starting auth proxy: %w", err)
+		}
+	}
+	return &Server{server: server, ui: ui, authProxy: proxy, logLevel: logLevel}, nil
 }
 
 func (s *Server) Stop() {
+	if s.authProxy != nil {
+		s.authProxy.stop()
+	}
 	if s.ui != nil {
 		s.ui.Stop()
 	}

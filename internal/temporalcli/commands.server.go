@@ -3,6 +3,7 @@ package temporalcli
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/google/uuid"
@@ -50,6 +51,11 @@ func (t *TemporalServerStartDevCommand) run(cctx *CommandContext, args []string)
 		CurrentClusterName:     "active",
 		InitialFailoverVersion: 1,
 	}
+	// Optional bearer-token auth proxy: external clients connect to
+	// TEMPORAL_AUTH_LISTEN (default 127.0.0.1:7234) with the token; internal
+	// services keep talking to the frontend directly.
+	opts.AuthToken = os.Getenv("TEMPORAL_AUTH_TOKEN")
+	opts.AuthProxyListen = os.Getenv("TEMPORAL_AUTH_LISTEN")
 	// Set the log level value of the server to the overall log level given to the
 	// CLI. But if it is "never" we have to do a special value, and if it was
 	// never changed, we have to use the default of "warn" instead of the CLI
