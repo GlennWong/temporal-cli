@@ -56,6 +56,9 @@ func (t *TemporalServerStartDevCommand) run(cctx *CommandContext, args []string)
 	// services keep talking to the frontend directly.
 	opts.AuthToken = os.Getenv("TEMPORAL_AUTH_TOKEN")
 	opts.AuthProxyListen = os.Getenv("TEMPORAL_AUTH_LISTEN")
+	if opts.AuthToken != "" && opts.AuthProxyListen == "" {
+		opts.AuthProxyListen = devserver.DefaultAuthProxyListen
+	}
 	// Set the log level value of the server to the overall log level given to the
 	// CLI. But if it is "never" we have to do a special value, and if it was
 	// never changed, we have to use the default of "warn" instead of the CLI
@@ -168,6 +171,10 @@ func (t *TemporalServerStartDevCommand) run(cctx *CommandContext, args []string)
 
 	cctx.Printer.Printlnf("Temporal CLI %v\n", VersionString())
 	cctx.Printer.Printlnf("%-21s %v:%v", "Temporal Server:", toFriendlyIp(opts.FrontendIP), opts.FrontendPort)
+	if opts.AuthToken != "" {
+		cctx.Printer.Printlnf("%-21s %v", "Temporal Auth Proxy:", opts.AuthProxyListen)
+		cctx.Printer.Printlnf("%-21s %v", "Temporal Auth Token:", opts.AuthToken)
+	}
 	if t.DbFilename == "" {
 		cctx.Printer.Printlnf("%-21s %v", "Temporal Persistence:", "in-memory")
 	} else {

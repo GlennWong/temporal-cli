@@ -12,6 +12,9 @@ import (
 
 const bearerPrefix = "Bearer "
 
+// DefaultAuthProxyListen is the default address of the in-process auth proxy.
+const DefaultAuthProxyListen = "127.0.0.1:7234"
+
 // authorized reports whether header carries the bearer token.
 func authorized(header, token string) bool {
 	if token == "" || !strings.HasPrefix(header, bearerPrefix) {

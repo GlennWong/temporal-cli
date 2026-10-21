@@ -160,7 +160,7 @@ func Start(options StartOptions) (*Server, error) {
 	var proxy *authProxy
 	if options.AuthToken != "" {
 		if options.AuthProxyListen == "" {
-			options.AuthProxyListen = "127.0.0.1:7234"
+			options.AuthProxyListen = DefaultAuthProxyListen
 		}
 		upstream := net.JoinHostPort(options.FrontendIP, strconv.Itoa(options.FrontendPort))
 		proxy, err = startAuthProxy(options.AuthProxyListen, upstream, options.AuthToken, options.Logger)
