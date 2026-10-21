@@ -3,6 +3,7 @@ package temporalcli
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"strings"
 
@@ -172,7 +173,11 @@ func (t *TemporalServerStartDevCommand) run(cctx *CommandContext, args []string)
 	cctx.Printer.Printlnf("Temporal CLI %v\n", VersionString())
 	cctx.Printer.Printlnf("%-21s %v:%v", "Temporal Server:", toFriendlyIp(opts.FrontendIP), opts.FrontendPort)
 	if opts.AuthToken != "" {
-		cctx.Printer.Printlnf("%-21s %v", "Temporal Auth Proxy:", opts.AuthProxyListen)
+		proxyAddr := opts.AuthProxyListen
+		if host, port, err := net.SplitHostPort(opts.AuthProxyListen); err == nil {
+			proxyAddr = fmt.Sprintf("%v:%v", toFriendlyIp(host), port)
+		}
+		cctx.Printer.Printlnf("%-21s %v", "Temporal Auth Proxy:", proxyAddr)
 		cctx.Printer.Printlnf("%-21s %v", "Temporal Auth Token:", opts.AuthToken)
 	}
 	if t.DbFilename == "" {
